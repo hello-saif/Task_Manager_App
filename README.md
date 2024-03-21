@@ -14,3 +14,6 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+
+![Artboard – 1](https://github.com/hello-saif/Task_Manager_App/assets/101374729/1eeeed01-467c-4844-8e43-270bcce8e976)
