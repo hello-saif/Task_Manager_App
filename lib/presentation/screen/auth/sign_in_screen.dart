@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 import 'package:tms/presentation/screen/auth/sign_up_screen.dart';
 
 import '../../../data/modles/login_response.dart';
 import '../../../data/modles/response_object.dart';
 import '../../../data/services/network_caller.dart';
 import '../../../data/utility/urls.dart';
+import '../../controller/SignInController.dart';
 import '../../controller/auth_controller.dart';
 import '../../widgets/background_widget.dart';
 import '../../widgets/snack_bar_message.dart';
@@ -22,6 +25,7 @@ class _SignInScreenState extends State<SignInScreen> {
   final TextEditingController _emailTEController = TextEditingController();
   final TextEditingController _passwordTEController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final SignInController _signInController = Get.find<SignInController>();
   bool _isLoginInProgress = false;
 
   @override
@@ -145,32 +149,11 @@ class _SignInScreenState extends State<SignInScreen> {
       ),
     );
   }
-
   Future<void> _signIn() async {
-    _isLoginInProgress = true;
-    setState(() {});
-    Map<String, dynamic> inputParams = {
-      'email': _emailTEController.text.trim(),
-      'password': _passwordTEController.text,
-    };
-    final ResponseObject response = await NetworkCaller.postRequest(
-        Urls.login, inputParams,
-        fromSignIn: true);
-    _isLoginInProgress = false;
-    setState(() {});
+    final result = await _signInController.signIn(
+        _emailTEController.text.trim(), _passwordTEController.text);
 
-    if (response.isSuccess) {
-      if (!mounted) {
-        return;
-      }
-
-      LoginResponse loginResponse =
-      LoginResponse.fromJson(response.responseBody);
-
-      /// Save the data to local cache
-      await AuthController.saveUserData(loginResponse.userData!);
-      await AuthController.saveUserToken(loginResponse.token!);
-
+    if (result) {
       if (mounted) {
         Navigator.pushAndRemoveUntil(
             context,
@@ -180,8 +163,7 @@ class _SignInScreenState extends State<SignInScreen> {
       }
     } else {
       if (mounted) {
-        showSnackBarMessage(
-            context, response.errorMessage ?? 'Login failed! Try again');
+        showSnackBarMessage(context, _signInController.errorMessage);
       }
     }
   }

@@ -1,30 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
-import '../../data/modles/count_by_status_wrapper.dart';
-import '../../data/modles/task_list_wrapper.dart';
-import '../../data/services/network_caller.dart';
-import '../../data/utility/urls.dart';
+import '../../data/modles/task_by_status_data.dart';
+import '../controller/CountTaskByStatusController.dart';
+import '../controller/NewTaskController.dart';
 import '../utils/app_colors.dart';
 import '../widgets/background_widget.dart';
 import '../widgets/empty_list_widget.dart';
 import '../widgets/profile_app_bar.dart';
-import '../widgets/snack_bar_message.dart';
 import '../widgets/task_card.dart';
 import '../widgets/task_counter_card.dart';
 import 'add_new_task_screen.dart';
 
 class NewTaskScreen extends StatefulWidget {
-  const NewTaskScreen({Key? key}) : super(key: key);
+  const NewTaskScreen({super.key});
 
   @override
   State<NewTaskScreen> createState() => _NewTaskScreenState();
 }
 
 class _NewTaskScreenState extends State<NewTaskScreen> {
-  bool _getAllTaskCountByStatusInProgress = false;
-  bool _getNewTaskListInProgress = false;
-  CountByStatusWrapper _countByStatusWrapper = CountByStatusWrapper();
-  TaskListWrapper _newTaskListWrapper = TaskListWrapper();
 
   @override
   void initState() {
@@ -33,8 +28,8 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
   }
 
   void _getDataFromApis() {
-    _getAllTaskCountByStatus();
-    _getAllNewTaskList();
+    Get.find<CountTaskByStatusController>().getCountByTaskStatus();
+    Get.find<NewTaskController>().getNewTaskList();
   }
 
   @override
@@ -44,38 +39,54 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
       body: BackgroundWidget(
         child: Column(
           children: [
-            Visibility(
-                visible: _getAllTaskCountByStatusInProgress == false,
-                replacement: const Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: LinearProgressIndicator(),
-                ),
-                child: taskCounterSection),
+            GetBuilder<CountTaskByStatusController>(
+                builder: (countTaskByStatusController) {
+                  return Visibility(
+                    visible: countTaskByStatusController.inProgress == false,
+                    replacement: const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: LinearProgressIndicator(),
+                    ),
+                    child: taskCounterSection(
+                      countTaskByStatusController
+                          .countByStatusWrapper.listOfTaskByStatusData ??
+                          [],
+                    ),
+                  );
+                }),
             Expanded(
-              child: Visibility(
-                visible: _getNewTaskListInProgress == false,
-                replacement: const Center(
-                  child: CircularProgressIndicator(),
-                ),
-                child: RefreshIndicator(
-                  onRefresh: () async => _getDataFromApis(),
-                  child: Visibility(
-                    visible: _newTaskListWrapper.taskList?.isNotEmpty ?? false,
-                    replacement: const EmptyListWidget(),
-                    child: ListView.builder(
-                      itemCount: _newTaskListWrapper.taskList?.length ?? 0,
-                      itemBuilder: (context, index) {
-                        return TaskCard(
-                          taskItem: _newTaskListWrapper.taskList![index],
-                          refreshList: () {
-                            _getDataFromApis();
-                          },
-                        );
-                      },
+              child:
+              GetBuilder<NewTaskController>(builder: (newTaskController) {
+                return Visibility(
+                  visible: newTaskController.inProgress == false,
+                  replacement: const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  child: RefreshIndicator(
+                    onRefresh: () async => _getDataFromApis(),
+                    child: Visibility(
+                      visible: newTaskController
+                          .newTaskListWrapper.taskList?.isNotEmpty ??
+                          false,
+                      replacement: const EmptyListWidget(),
+                      child: ListView.builder(
+                        itemCount: newTaskController
+                            .newTaskListWrapper.taskList?.length ??
+                            0,
+                        itemBuilder: (context, index) {
+                          return TaskCard(
+                            taskItem: newTaskController
+                                .newTaskListWrapper.taskList![index],
+                            refreshList: () {
+                              _getDataFromApis();
+                            },
+                          );
+                        },
+                      ),
                     ),
                   ),
-                ),
-              ),
+                );
+              }),
             ),
           ],
         ),
@@ -100,20 +111,19 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
     );
   }
 
-  Widget get taskCounterSection {
+  Widget taskCounterSection(
+      List<TaskByStatusData> listOfTaskCountByStatus) {
     return SizedBox(
-      height: 110,
+      height: 115,
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: ListView.separated(
-          itemCount: _countByStatusWrapper.listOfTaskByStatusData?.length ?? 0,
+          itemCount: listOfTaskCountByStatus.length,
           scrollDirection: Axis.horizontal,
           itemBuilder: (context, index) {
             return TaskCounterCard(
-              title: _countByStatusWrapper.listOfTaskByStatusData![index].sId ??
-                  '',
-              amount:
-              _countByStatusWrapper.listOfTaskByStatusData![index].sum ?? 0,
+              title: listOfTaskCountByStatus[index].sId ?? '',
+              amount: listOfTaskCountByStatus[index].sum ?? 0,
             );
           },
           separatorBuilder: (_, __) {
@@ -126,45 +136,4 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
     );
   }
 
-  Future<void> _getAllTaskCountByStatus() async {
-    _getAllTaskCountByStatusInProgress = true;
-    setState(() {});
-    final response = await NetworkCaller.getRequest(Urls.taskCountByStatus);
-
-    if (response.isSuccess) {
-      _countByStatusWrapper =
-          CountByStatusWrapper.fromJson(response.responseBody);
-      _getAllTaskCountByStatusInProgress = false;
-      setState(() {});
-    } else {
-      _getAllTaskCountByStatusInProgress = false;
-      setState(() {});
-      if (mounted) {
-        showSnackBarMessage(
-            context,
-            response.errorMessage ??
-                'Get task count by status has been failed');
-      }
-    }
-  }
-
-  Future<void> _getAllNewTaskList() async {
-    _getNewTaskListInProgress = true;
-    setState(() {});
-    final response = await NetworkCaller.getRequest(Urls.newTaskList);
-    if (response.isSuccess) {
-      _newTaskListWrapper = TaskListWrapper.fromJson(response.responseBody);
-      _getNewTaskListInProgress = false;
-      setState(() {});
-    } else {
-      _getNewTaskListInProgress = false;
-      setState(() {});
-      if (mounted) {
-        showSnackBarMessage(
-            context,
-            response.errorMessage ??
-                'Get new task list has been failed');
-      }
-    }
-  }
 }
