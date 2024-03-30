@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:tms/presentation/screen/auth/sign_in_screen.dart';
 import '../../../data/modles/response_object.dart';
 import '../../../data/services/network_caller.dart';
 import '../../../data/utility/urls.dart';
+import '../../controller/SignUpController.dart';
 import '../../widgets/background_widget.dart';
 import '../../widgets/snack_bar_message.dart';
 
@@ -18,6 +22,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _lastNameTEController = TextEditingController();
   final TextEditingController _mobileTEController = TextEditingController();
   final TextEditingController _passwordTEController = TextEditingController();
+  final SignUpController _SignUpController = Get.find<SignUpController>();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _isRegistrationInProgress = false;
 
@@ -168,30 +173,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Future<void> _signUp() async {
-    _isRegistrationInProgress = true;
-    setState(() {});
-    Map<String, dynamic> inputParams = {
-      "email": _emailTEController.text.trim(),
-      "firstName": _firstNameTEController.text.trim(),
-      "lastName": _lastNameTEController.text.trim(),
-      "mobile": _mobileTEController.text.trim(),
-      "password": _passwordTEController.text,
-    };
+    final result =await _SignUpController.signUp(
+      _emailTEController.text.trim(),
+      _firstNameTEController.text.trim(),
+      _lastNameTEController.text.trim(),
+      _mobileTEController.text.trim(),
+        _passwordTEController.text
+    );
 
-    final ResponseObject response =
-    await NetworkCaller.postRequest(Urls.registration, inputParams);
 
-    _isRegistrationInProgress = false;
-    setState(() {});
-
-    if (response.isSuccess) {
+    if (result) {
       if (mounted) {
         showSnackBarMessage(context, 'Registration success! Please login.');
-        Navigator.pop(context);
+        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder:
+            (context)=>const SignInScreen()), (route) => false);
       }
     } else {
       if (mounted) {
-        showSnackBarMessage(context, 'Registration failed! Try again.', true);
+        showSnackBarMessage(context, _SignUpController.errorMessage);
+
+        //showSnackBarMessage(context, 'Registration failed! Try again.', true);
       }
     }
   }
