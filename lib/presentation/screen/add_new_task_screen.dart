@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 
 import '../../data/services/network_caller.dart';
 import '../../data/utility/urls.dart';
+import '../controller/AddNewTaskController.dart';
 import '../widgets/background_widget.dart';
 import '../widgets/profile_app_bar.dart';
 import '../widgets/snack_bar_message.dart';
+import 'new_task_screen.dart';
 
 class AddNewTaskScreen extends StatefulWidget {
   const AddNewTaskScreen({Key? key}) : super(key: key);
@@ -16,6 +20,7 @@ class AddNewTaskScreen extends StatefulWidget {
 class _AddNewTaskScreenState extends State<AddNewTaskScreen> {
   final TextEditingController _titleTEController = TextEditingController();
   final TextEditingController _descriptionTEController = TextEditingController();
+  final AddnewTaskController _AddnewTaskController = Get.find<AddnewTaskController>();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _addNewTaskInProgress = false;
   bool _shouldRefreshNewTaskList = false;
@@ -102,32 +107,22 @@ class _AddNewTaskScreenState extends State<AddNewTaskScreen> {
   }
 
   Future<void> _addNewTask() async {
-    _addNewTaskInProgress = true;
-    setState(() {});
+ final result =await _AddnewTaskController.AddNewTask(
+     _titleTEController.text.trim(),
+     _descriptionTEController.text.trim()
+ );
 
-    Map<String, dynamic> inputParams = {
-      "title": _titleTEController.text.trim(),
-      "description": _descriptionTEController.text.trim(),
-      "status": "New"
-    };
-
-    final response =
-    await NetworkCaller.postRequest(Urls.createTask, inputParams);
-
-    _addNewTaskInProgress = false;
-    setState(() {});
-
-    if (response.isSuccess) {
+    if (result) {
       _shouldRefreshNewTaskList = true;
       _titleTEController.clear();
       _descriptionTEController.clear();
       if (mounted) {
         showSnackBarMessage(context, 'New task has been added!');
+
       }
     } else {
       if (mounted) {
-        showSnackBarMessage(
-            context, response.errorMessage ?? 'Add new task failed!', true);
+        showSnackBarMessage(context,_AddnewTaskController.errorMessage);
       }
     }
   }

@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:tms/presentation/controller/AddNewTaskController.dart';
 import 'package:tms/presentation/controller/CountTaskByStatusController.dart';
 import 'package:tms/presentation/controller/NewTaskController.dart';
 import 'package:tms/presentation/controller/SignInController.dart';
@@ -11,5 +12,6 @@ class ControllerBinder extends Bindings {
     Get.lazyPut(() => CountTaskByStatusController());
     Get.lazyPut(() => NewTaskController());
     Get.lazyPut(() => SignUpController());
+    Get.lazyPut(() => AddnewTaskController());
   }
 }
